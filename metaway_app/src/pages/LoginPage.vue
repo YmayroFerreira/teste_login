@@ -3,7 +3,7 @@
     <q-form @submit="onSubmit" @reset="onReset" class="q-gutter-md">
       <q-input
         filled
-        v-model="name"
+        v-model="username"
         label="Usuário"
         hint="insira seu nome de usuário"
         lazy-rules
@@ -33,43 +33,48 @@
 </template>
 
 <script>
-import { useQuasar } from 'quasar';
+import { Cookies, useQuasar } from 'quasar';
 import { ref } from 'vue';
+import api from '/src/axios-api';
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'LoginPage',
   setup() {
     const $q = useQuasar();
-
-    const name = ref(null);
+    const router = useRouter();
+    const username = ref(null);
     const password = ref(null);
     const remember = ref(false);
 
     return {
-      name,
+      username,
       password,
       remember,
 
       onSubmit() {
-        if (remember.value !== true) {
-          $q.notify({
-            color: 'red-5',
-            textColor: 'white',
-            icon: 'warning',
-            message: 'You need to accept the license and terms first',
+        api
+          .post('/auth/login', {
+            password: password.value,
+            username: username.value,
+          })
+          .then((response) => {
+            Cookies.set('user', JSON.stringify(response.data));
+            Cookies.set('token', response.data.accessToken);
+            router.push({ path: '/' });
+          })
+          .catch(() => {
+            $q.notify({
+              color: 'red-5',
+              textColor: 'white',
+              icon: 'warning',
+              message: 'Login e/ou senha inválida(s)',
+            });
           });
-        } else {
-          $q.notify({
-            color: 'green-4',
-            textColor: 'white',
-            icon: 'cloud_done',
-            message: 'Submitted',
-          });
-        }
       },
 
       onReset() {
-        name.value = null;
+        username.value = null;
         password.value = null;
         remember.value = false;
       },
